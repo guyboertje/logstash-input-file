@@ -209,6 +209,8 @@ class LogStash::Inputs::File < LogStash::Inputs::Base
       @tail_config[:start_new_files_at] = :beginning
     end
 
+    @listener_class = @mode == "read" ? ListenerRead : ListenerTail
+
     @codec = LogStash::Codecs::IdentityMapCodec.new(@codec)
   end # def register
 

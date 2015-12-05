@@ -390,6 +390,10 @@ describe LogStash::Inputs::File do
         second_lsof = lsof_proc.call
         expect(second_lsof).to eq(first_lsof)
       end
+      sleep 0.2
+      subject.stop
+      expect(events[0]["message"]).to eq "hello"
+      expect(events[1]["message"]).to eq "world"
     end
   end
 end
