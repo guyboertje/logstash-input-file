@@ -12,16 +12,16 @@ module LogStash module Inputs class IdentityMapCodecComponent
     self
   end
 
-  def stop
-    @codec.close
-  end
-
   def do_work(context, data)
-    do_line(context, data) || do_eviction(context, data)
+    do_line(context, data) ||
+    do_eviction(context, data)
   end
 
   def process(context, data)
     # data should be an event
+    path = context[:path]
+    data["[@metadata][path]"] = path
+    data["path"] = path if !data.include?("path")
     deliver(context, data)
   end
 
