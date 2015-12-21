@@ -392,8 +392,18 @@ describe LogStash::Inputs::File do
       end
       sleep 0.2
       subject.stop
-      expect(events[0]["message"]).to eq "hello"
-      expect(events[1]["message"]).to eq "world"
+
+      event1 = events[0]
+      expect(event1).not_to be_nil
+      expect(event1["path"]).to eq tmpfile_path
+      expect(event1["@metadata"]["path"]).to eq tmpfile_path
+      expect(event1["message"]).to eq "hello"
+
+      event2 = events[1]
+      expect(event2).not_to be_nil
+      expect(event2["path"]).to eq tmpfile_path
+      expect(event2["@metadata"]["path"]).to eq tmpfile_path
+      expect(event2["message"]).to eq "world"
     end
   end
 end
