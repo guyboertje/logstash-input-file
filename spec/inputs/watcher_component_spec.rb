@@ -10,8 +10,8 @@ describe LogStash::Inputs::WatcherComponent do
   let(:upstream)   { ComponentTracer.new }
   let(:downstream) { ComponentTracer.new }
 
-  let(:loggr) { ComponentLogTracer.new }
-  let(:watchloggr) { ComponentLogTracer.new }
+  let(:loggr)      { FileLogTracer.new }
+  let(:watchloggr) { FileLogTracer.new }
 
   let(:tmpfile_path) { Stud::Temporary.pathname }
   let(:sincedb_path) { Stud::Temporary.pathname }
