@@ -31,6 +31,28 @@ describe LogStash::Inputs::Component do
     end
   end
 
+  describe "attr_accessors" do
+    subject { InputTestComponent.new(:link, nil, nil) }
+
+    it "allows upstream to be specified" do
+      expect(subject.upstream).to be_nil
+      subject.upstream = upstream
+      expect(subject.upstream).to eq(upstream)
+    end
+
+    it "allows downstream to be specified" do
+      expect(subject.downstream).to be_nil
+      subject.downstream = downstream
+      expect(subject.downstream).to eq(downstream)
+    end
+
+    it "allows logger to be specified" do
+      expect(subject.logger).to be_a(Cabin::Channel)
+      subject.logger = Object.new
+      expect(subject.logger).not_to be_a(Cabin::Channel)
+    end
+  end
+
   describe "Public API" do
     it "has methods" do
       expect(subject).to respond_to(:component_type)

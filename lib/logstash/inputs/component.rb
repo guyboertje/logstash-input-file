@@ -8,6 +8,8 @@ module LogStash module Inputs module Component
   # if component_type is :tail then it will only redefine the accept method
   # if component_type is :link then it will only redefine the do_work method
 
+  attr_accessor :upstream, :downstream, :logger
+
   def initialize(component_type, upstream, downstream)
     @component_type, @upstream, @downstream = component_type, upstream, downstream
     @logger = Cabin::Channel.get(LogStash)
@@ -15,22 +17,6 @@ module LogStash module Inputs module Component
 
   def component_type
     @component_type
-  end
-
-  def upstream
-    @upstream
-  end
-
-  def downstream
-    @downstream
-  end
-
-  def logger
-    @logger
-  end
-
-  def logger=(logger)
-    @logger = logger
   end
 
   def accept_meta(opts = {})

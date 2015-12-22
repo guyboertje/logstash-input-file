@@ -209,6 +209,7 @@ class LogStash::Inputs::File < LogStash::Inputs::Base
       @tail_config[:start_new_files_at] = :beginning
     end
 
+    @channel = []
     @codec = LogStash::Codecs::IdentityMapCodec.new(@codec)
   end # def register
 
@@ -251,9 +252,22 @@ class LogStash::Inputs::File < LogStash::Inputs::Base
     end
   end
 
-  def listener_for(path)
-    # path is the identity
-    ListenerTail.new(path, self)
+  # in filewatch the tail will ask for this
+  def channel_for(context)
+    # some contexts may need a differently configured channel
+    # for now the static one will do
+    # we give the head component out as to the
+    # outside world it is the channel
+    @channel.first
+  end
+
+  def build_channel
+    watch = WatcherComponent.new(:head, nil, )
+    watch.downstream = imc = IdentityMapCodecComponent.new(:link, watch, nil)
+    imc.downstream = local = LocaLDecorator.new(:link, imc, nil)
+    local.downstream = global = GlobalDecorator.new(:link, local, nil)
+    global.downstream = enqueue = EnqueueComponent.new(:tail, global, nil)
+    @channel = [watch, imc, local, global, enqueue]
   end
 
   def begin_tailing
@@ -263,12 +277,13 @@ class LogStash::Inputs::File < LogStash::Inputs::Base
     # use observer listener api
     @tail = FileWatch::Tail.new_observing(@tail_config)
     @tail.logger = @logger
+    build_channel
     @path.each { |path| @tail.tail(path) }
   end
 
   def run(queue)
-    begin_tailing
     @queue = queue
+    begin_tailing
     @tail.subscribe(self)
   end # def run
 
