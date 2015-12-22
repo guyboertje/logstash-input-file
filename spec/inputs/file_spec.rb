@@ -390,20 +390,6 @@ describe LogStash::Inputs::File do
         second_lsof = lsof_proc.call
         expect(second_lsof).to eq(first_lsof)
       end
-      sleep 0.2
-      subject.stop
-
-      event1 = events[0]
-      expect(event1).not_to be_nil
-      expect(event1["path"]).to eq tmpfile_path
-      expect(event1["@metadata"]["path"]).to eq tmpfile_path
-      expect(event1["message"]).to eq "hello"
-
-      event2 = events[1]
-      expect(event2).not_to be_nil
-      expect(event2["path"]).to eq tmpfile_path
-      expect(event2["@metadata"]["path"]).to eq tmpfile_path
-      expect(event2["message"]).to eq "world"
     end
   end
 end
