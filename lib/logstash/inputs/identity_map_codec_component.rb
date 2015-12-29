@@ -12,6 +12,10 @@ module LogStash module Inputs class IdentityMapCodecComponent
     self
   end
 
+  def stop
+    @codec.close
+  end
+
   def do_work(context, data)
     do_line(context, data) || do_eviction(context, data)
   end

@@ -9,6 +9,7 @@ module LogStash module Inputs module Component
   # if component_type is :link then it will only redefine the do_work method
 
   attr_accessor :upstream, :downstream, :logger
+  attr_reader :meta
 
   def initialize(component_type, upstream, downstream)
     @component_type, @upstream, @downstream = component_type, upstream, downstream
@@ -37,6 +38,6 @@ module LogStash module Inputs module Component
   end
 
   def meta_valid?
-    @meta.is_a(Hash)
+    meta.is_a(Hash)
   end
 end end end

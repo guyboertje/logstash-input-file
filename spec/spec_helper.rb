@@ -36,6 +36,7 @@ module FileInput
   class CodecTracer < TracerBase
     def decode_accept(ctx, data, listener)
       @tracer.push [:decode_accept, [ctx, data]]
+      ctx[:action] = "event"
       listener.process(ctx, {"message" => data})
     end
     def accept(listener)

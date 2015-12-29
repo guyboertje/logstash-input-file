@@ -7,15 +7,13 @@ describe LogStash::Inputs::IdentityMapCodecComponent do
   let(:codec)      { CodecTracer.new }
   let(:upstream)   { ComponentTracer.new }
   let(:downstream) { ComponentTracer.new }
-  let(:loggr)      { ComponentLogTracer.new }
+  let(:loggr)      { FileLogTracer.new }
   let(:path)       { "path/to/some/file.log" }
   let(:ctx)        { {:path => path} }
   let(:line)       { "line1" }
 
   let(:event) do
-    { "[@metadata][path]" => path,
-      "path" => path,
-      "message" => line }
+    { "message" => line }
   end
 
   subject do
@@ -30,7 +28,9 @@ describe LogStash::Inputs::IdentityMapCodecComponent do
       ctx.update(:action => 'line')
       subject.accept(ctx, line)
       expect(codec).to receive_call_and_args(:decode_accept, [[ctx, line]])
-      expect(downstream).to receive_call_and_args(:accept, [[ctx, event]])
+      exctx, exevent = downstream.trace_for(:accept).first
+      expect(exctx[:action]).to eq("event")
+      expect(exevent).to eq(event)
     end
   end
 
@@ -43,7 +43,6 @@ describe LogStash::Inputs::IdentityMapCodecComponent do
     end
 
     it "calls auto_flush on codec" do
-
       subject.accept(ctx, line)
       expect(codec).to receive_call_and_args(:auto_flush, [true])
     end

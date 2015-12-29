@@ -61,6 +61,7 @@ describe LogStash::Inputs::Component do
       expect(subject).to respond_to(:accept)
       expect(subject).to respond_to(:deliver)
       expect(subject).to respond_to(:do_work)
+      expect(subject).to respond_to(:meta)
       expect(subject).to respond_to(:accept_meta)
     end
   end

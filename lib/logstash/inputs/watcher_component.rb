@@ -9,10 +9,6 @@ module LogStash module Inputs class WatcherComponent
     self
   end
 
-  def run
-    @watcher.subscribe(self)
-  end
-
   def stop
     @watcher.quit
   end

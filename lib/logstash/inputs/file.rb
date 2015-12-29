@@ -1,7 +1,11 @@
 # encoding: utf-8
 require "logstash/namespace"
 require "logstash/inputs/base"
-require "logstash/codecs/identity_map_codec"
+require "logstash/inputs/watcher_component"
+require "logstash/inputs/identity_map_codec_component"
+require "logstash/inputs/local_decorate_component"
+require "logstash/inputs/global_decorate_component"
+require "logstash/inputs/enqueue_component"
 
 require "pathname"
 require "socket" # for Socket.gethostname
@@ -63,22 +67,7 @@ require "socket" # for Socket.gethostname
 # determined by the `stat_interval` and `discover_interval` options)
 # will not get picked up.
 
-class LogStash::Codecs::Base
-  # TODO - move this to core
-  if !method_defined?(:accept)
-    def accept(listener)
-      decode(listener.data) do |event|
-        listener.process_event(event)
-      end
-    end
-  end
-  if !method_defined?(:auto_flush)
-    def auto_flush
-    end
-  end
-end
-
-class LogStash::Inputs::File < LogStash::Inputs::Base
+module LogStash module Inputs class File < LogStash::Inputs::Base
   config_name "file"
 
   # The path(s) to the file(s) to use as an input.
@@ -185,21 +174,21 @@ class LogStash::Inputs::File < LogStash::Inputs::Base
 
       # Join by ',' to make it easy for folks to know their own sincedb
       # generated path (vs, say, inspecting the @path array)
-      @sincedb_path = File.join(sincedb_dir, ".sincedb_" + Digest::MD5.hexdigest(@path.join(",")))
+      @sincedb_path = ::File.join(sincedb_dir, ".sincedb_" + Digest::MD5.hexdigest(@path.join(",")))
 
       # Migrate any old .sincedb to the new file (this is for version <=1.1.1 compatibility)
-      old_sincedb = File.join(sincedb_dir, ".sincedb")
-      if File.exists?(old_sincedb)
+      old_sincedb = ::File.join(sincedb_dir, ".sincedb")
+      if ::File.exists?(old_sincedb)
         @logger.info("Renaming old ~/.sincedb to new one", :old => old_sincedb,
                      :new => @sincedb_path)
-        File.rename(old_sincedb, @sincedb_path)
+        ::File.rename(old_sincedb, @sincedb_path)
       end
 
       @logger.info("No sincedb_path set, generating one based on the file path",
                    :sincedb_path => @sincedb_path, :path => @path)
     end
 
-    if File.directory?(@sincedb_path)
+    if ::File.directory?(@sincedb_path)
       raise ArgumentError.new("The \"sincedb_path\" argument must point to a file, received a directory: \"#{@sincedb_path}\"")
     end
 
@@ -210,72 +199,40 @@ class LogStash::Inputs::File < LogStash::Inputs::Base
     end
 
     @channel = []
-    @codec = LogStash::Codecs::IdentityMapCodec.new(@codec)
+    # @codec = LogStash::Codecs::IdentityMapCodec.new(@codec)
   end # def register
-
-  class ListenerTail
-    # use attr_reader to define noop methods
-    attr_reader :input, :path, :data
-    attr_reader :deleted, :created, :error, :eof
-
-    # construct with upstream state
-    def initialize(path, input)
-      @path, @input = path, input
-    end
-
-    def timed_out
-      input.codec.evict(path)
-    end
-
-    def accept(data)
-      # and push transient data filled dup listener downstream
-      input.log_line_received(path, data)
-      input.codec.accept(dup_adding_state(data))
-    end
-
-    def process_event(event)
-      event["[@metadata][path]"] = path
-      event["path"] = path if !event.include?("path")
-      input.post_process_this(event)
-    end
-
-    def add_state(data)
-      @data = data
-      self
-    end
-
-    private
-
-    # duplicate and add state for downstream
-    def dup_adding_state(line)
-      self.class.new(path, input).add_state(line)
-    end
-  end
 
   # in filewatch the tail will ask for this
   def channel_for(context)
     # some contexts may need a differently configured channel
     # for now the static one will do
-    # we give the head component out as to the
-    # outside world it is the channel
+    # we give the head component out as, to the
+    # outside world, it is the channel
     @channel.first
   end
 
   def build_channel
-    watch = WatcherComponent.new(:head, nil, )
-    watch.downstream = imc = IdentityMapCodecComponent.new(:link, watch, nil)
-    imc.downstream = local = LocaLDecorator.new(:link, imc, nil)
-    local.downstream = global = GlobalDecorator.new(:link, local, nil)
-    global.downstream = enqueue = EnqueueComponent.new(:tail, global, nil)
-    @channel = [watch, imc, local, global, enqueue]
+    @watch_component = WatcherComponent.new(:head, nil, nil).add_watcher(@tail)
+    @watch_component.downstream = @imcc = IdentityMapCodecComponent.new(:link, @watch_component, nil).add_codec(@codec)
+    @imcc.downstream = local = LocalDecorateComponent.new(:link, @imcc, nil).accept_meta(:host => @host)
+    global_meta = {
+      :type => @type,
+      :add_field => @add_field,
+      :tags => @tags,
+      :plugin_name => self.class.name
+    }
+    local.downstream = global = GlobalDecorateComponent.new(:link, local, nil).accept_meta(global_meta)
+    @queue_component = EnqueueComponent.new(:tail, global, nil).add_queue(@queue)
+    global.downstream = @queue_component
+    @channel = [@watch_component, @imcc, local, global, @queue_component]
   end
 
   def begin_tailing
     # if the pipeline restarts this input,
     # make sure previous files are closed
     stop
-    # use observer listener api
-    @tail = FileWatch::Tail.new_observing(@tail_config)
+    # use accepting listener api
+    @tail = FileWatch::Tail.new_accepting(@tail_config)
     @tail.logger = @logger
     build_channel
     @path.each { |path| @tail.tail(path) }
@@ -287,24 +244,14 @@ class LogStash::Inputs::File < LogStash::Inputs::Base
     @tail.subscribe(self)
   end # def run
 
-  def post_process_this(event)
-    event["host"] = @host if !event.include?("host")
-    decorate(event)
-    @queue << event
-  end
-
-  def log_line_received(path, line)
-    return if !@logger.debug?
-    @logger.debug("Received line", :path => path, :text => line)
-  end
-
   def stop
     # in filewatch >= 0.6.7, quit will closes and forget all files
     # but it will write their last read positions to since_db
     # beforehand
     if @tail
-      @codec.close
-      @tail.quit
+      @imcc.stop
+      @watch_component.stop
+      # close_channel
     end
   end
-end # class LogStash::Inputs::File
+end end end # class LogStash::Inputs::File

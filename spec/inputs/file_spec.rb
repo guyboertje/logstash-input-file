@@ -9,138 +9,138 @@ require "logstash/codecs/multiline"
 FILE_DELIMITER = LogStash::Environment.windows? ? "\r\n" : "\n"
 
 describe LogStash::Inputs::File do
-  describe "testing with input(conf) do |pipeline, queue|" do
-    it_behaves_like "an interruptible input plugin" do
-      let(:config) do
-        {
-          "path" => Stud::Temporary.pathname,
-          "sincedb_path" => Stud::Temporary.pathname
-        }
-      end
-    end
+  # describe "testing with input(conf) do |pipeline, queue|" do
+  #   it_behaves_like "an interruptible input plugin" do
+  #     let(:config) do
+  #       {
+  #         "path" => Stud::Temporary.pathname,
+  #         "sincedb_path" => Stud::Temporary.pathname
+  #       }
+  #     end
+  #   end
 
-    it "should start at the beginning of an existing file" do
-      tmpfile_path = Stud::Temporary.pathname
-      sincedb_path = Stud::Temporary.pathname
+  #   it "should start at the beginning of an existing file" do
+  #     tmpfile_path = Stud::Temporary.pathname
+  #     sincedb_path = Stud::Temporary.pathname
 
-      conf = <<-CONFIG
-        input {
-          file {
-            type => "blah"
-            path => "#{tmpfile_path}"
-            start_position => "beginning"
-            sincedb_path => "#{sincedb_path}"
-            delimiter => "#{FILE_DELIMITER}"
-          }
-        }
-      CONFIG
+  #     conf = <<-CONFIG
+  #       input {
+  #         file {
+  #           type => "blah"
+  #           path => "#{tmpfile_path}"
+  #           start_position => "beginning"
+  #           sincedb_path => "#{sincedb_path}"
+  #           delimiter => "#{FILE_DELIMITER}"
+  #         }
+  #       }
+  #     CONFIG
 
-      File.open(tmpfile_path, "a") do |fd|
-        fd.puts("hello")
-        fd.puts("world")
-        fd.fsync
-      end
+  #     File.open(tmpfile_path, "a") do |fd|
+  #       fd.puts("hello")
+  #       fd.puts("world")
+  #       fd.fsync
+  #     end
 
-      events = input(conf) do |pipeline, queue|
-        2.times.collect { queue.pop }
-      end
+  #     events = input(conf) do |pipeline, queue|
+  #       2.times.collect { queue.pop }
+  #     end
 
-      insist { events[0]["message"] } == "hello"
-      insist { events[1]["message"] } == "world"
-    end
+  #     insist { events[0]["message"] } == "hello"
+  #     insist { events[1]["message"] } == "world"
+  #   end
 
-    it "should restarts at the sincedb value" do
-      tmpfile_path = Stud::Temporary.pathname
-      sincedb_path = Stud::Temporary.pathname
+  #   it "should restarts at the sincedb value" do
+  #     tmpfile_path = Stud::Temporary.pathname
+  #     sincedb_path = Stud::Temporary.pathname
 
-      conf = <<-CONFIG
-        input {
-          file {
-            type => "blah"
-            path => "#{tmpfile_path}"
-            start_position => "beginning"
-            sincedb_path => "#{sincedb_path}"
-            delimiter => "#{FILE_DELIMITER}"
-          }
-        }
-      CONFIG
+  #     conf = <<-CONFIG
+  #       input {
+  #         file {
+  #           type => "blah"
+  #           path => "#{tmpfile_path}"
+  #           start_position => "beginning"
+  #           sincedb_path => "#{sincedb_path}"
+  #           delimiter => "#{FILE_DELIMITER}"
+  #         }
+  #       }
+  #     CONFIG
 
-      File.open(tmpfile_path, "w") do |fd|
-        fd.puts("hello3")
-        fd.puts("world3")
-      end
+  #     File.open(tmpfile_path, "w") do |fd|
+  #       fd.puts("hello3")
+  #       fd.puts("world3")
+  #     end
 
-      events = input(conf) do |pipeline, queue|
-        2.times.collect { queue.pop }
-      end
+  #     events = input(conf) do |pipeline, queue|
+  #       2.times.collect { queue.pop }
+  #     end
 
-      insist { events[0]["message"] } == "hello3"
-      insist { events[1]["message"] } == "world3"
+  #     insist { events[0]["message"] } == "hello3"
+  #     insist { events[1]["message"] } == "world3"
 
-      File.open(tmpfile_path, "a") do |fd|
-        fd.puts("foo")
-        fd.puts("bar")
-        fd.puts("baz")
-        fd.fsync
-      end
+  #     File.open(tmpfile_path, "a") do |fd|
+  #       fd.puts("foo")
+  #       fd.puts("bar")
+  #       fd.puts("baz")
+  #       fd.fsync
+  #     end
 
-      events = input(conf) do |pipeline, queue|
-        3.times.collect { queue.pop }
-      end
+  #     events = input(conf) do |pipeline, queue|
+  #       3.times.collect { queue.pop }
+  #     end
 
-      insist { events[0]["message"] } == "foo"
-      insist { events[1]["message"] } == "bar"
-      insist { events[2]["message"] } == "baz"
-    end
+  #     insist { events[0]["message"] } == "foo"
+  #     insist { events[1]["message"] } == "bar"
+  #     insist { events[2]["message"] } == "baz"
+  #   end
 
-    it "should not overwrite existing path and host fields" do
-      tmpfile_path = Stud::Temporary.pathname
-      sincedb_path = Stud::Temporary.pathname
+  #   it "should not overwrite existing path and host fields" do
+  #     tmpfile_path = Stud::Temporary.pathname
+  #     sincedb_path = Stud::Temporary.pathname
 
-      conf = <<-CONFIG
-        input {
-          file {
-            type => "blah"
-            path => "#{tmpfile_path}"
-            start_position => "beginning"
-            sincedb_path => "#{sincedb_path}"
-            delimiter => "#{FILE_DELIMITER}"
-            codec => "json"
-          }
-        }
-      CONFIG
+  #     conf = <<-CONFIG
+  #       input {
+  #         file {
+  #           type => "blah"
+  #           path => "#{tmpfile_path}"
+  #           start_position => "beginning"
+  #           sincedb_path => "#{sincedb_path}"
+  #           delimiter => "#{FILE_DELIMITER}"
+  #           codec => "json"
+  #         }
+  #       }
+  #     CONFIG
 
-      File.open(tmpfile_path, "w") do |fd|
-        fd.puts('{"path": "my_path", "host": "my_host"}')
-        fd.puts('{"my_field": "my_val"}')
-        fd.fsync
-      end
+  #     File.open(tmpfile_path, "w") do |fd|
+  #       fd.puts('{"path": "my_path", "host": "my_host"}')
+  #       fd.puts('{"my_field": "my_val"}')
+  #       fd.fsync
+  #     end
 
-      events = input(conf) do |pipeline, queue|
-        2.times.collect { queue.pop }
-      end
+  #     events = input(conf) do |pipeline, queue|
+  #       2.times.collect { queue.pop }
+  #     end
 
-      insist { events[0]["path"] } == "my_path"
-      insist { events[0]["host"] } == "my_host"
+  #     insist { events[0]["path"] } == "my_path"
+  #     insist { events[0]["host"] } == "my_host"
 
-      insist { events[1]["path"] } == "#{tmpfile_path}"
-      insist { events[1]["host"] } == "#{Socket.gethostname.force_encoding(Encoding::UTF_8)}"
-    end
+  #     insist { events[1]["path"] } == "#{tmpfile_path}"
+  #     insist { events[1]["host"] } == "#{Socket.gethostname.force_encoding(Encoding::UTF_8)}"
+  #   end
 
-    context "when sincedb_path is an existing directory" do
-      let(:tmpfile_path) { Stud::Temporary.pathname }
-      let(:sincedb_path) { Stud::Temporary.directory }
-      subject { LogStash::Inputs::File.new("path" => tmpfile_path, "sincedb_path" => sincedb_path) }
+  #   context "when sincedb_path is an existing directory" do
+  #     let(:tmpfile_path) { Stud::Temporary.pathname }
+  #     let(:sincedb_path) { Stud::Temporary.directory }
+  #     subject { LogStash::Inputs::File.new("path" => tmpfile_path, "sincedb_path" => sincedb_path) }
 
-      after :each do
-        FileUtils.rm_rf(sincedb_path)
-      end
+  #     after :each do
+  #       FileUtils.rm_rf(sincedb_path)
+  #     end
 
-      it "should raise exception" do
-        expect { subject.register }.to raise_error(ArgumentError)
-      end
-    end
-  end
+  #     it "should raise exception" do
+  #       expect { subject.register }.to raise_error(ArgumentError)
+  #     end
+  #   end
+  # end
 
   describe "testing with new, register, run and stop" do
     let(:conf)         { Hash.new }

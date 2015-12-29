@@ -7,7 +7,8 @@ module LogStash module Inputs class LocalDecorateComponent
   def do_work(context, data)
     # data is a LS Event
     put_host(data)
-    put_path(data)
+    put_path(context[:path], data)
+    deliver(context, data)
   end
 
   private
@@ -15,14 +16,13 @@ module LogStash module Inputs class LocalDecorateComponent
   def put_host(event)
     return if event.include?("host")
     if (host = meta_host)
-      data["host"] = host
+      event["host"] = host
     end
   end
 
-  def put_path(event)
-    path = context[:path]
-    data["[@metadata][path]"] = path
-    data["path"] = path if !data.include?("path")
+  def put_path(path, event)
+    event["[@metadata][path]"] = path
+    event["path"] = path if !event.include?("path")
   end
 
   def meta_host
