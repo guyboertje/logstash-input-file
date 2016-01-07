@@ -37,6 +37,8 @@ module LogStash module Inputs module Component
     downstream.accept(context, data)
   end
 
+  private
+
   def meta_valid?
     meta.is_a(Hash)
   end

@@ -8,7 +8,7 @@ module LogStash module Inputs class LocalDecorateComponent
     # data is a LS Event
     put_host(data)
     put_path(context[:path], data)
-    deliver(context, data)
+    super
   end
 
   private

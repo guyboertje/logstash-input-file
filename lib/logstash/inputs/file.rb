@@ -67,6 +67,28 @@ require "socket" # for Socket.gethostname
 # determined by the `stat_interval` and `discover_interval` options)
 # will not get picked up.
 
+class LogStash::Codecs::Base
+  # TODO - move this to core
+  if !method_defined?(:auto_flush)
+    def auto_flush
+    end
+  end
+  if !method_defined?(:add_listener)
+    def add_listener(listener)
+      @listener = listener
+      self
+    end
+  end
+  if !method_defined?(:decode_accept)
+    def decode_accept(ctx, data)
+      decode(data) do |event|
+        ctx[:action] = "event"
+        @listener.process(ctx, event)
+      end
+    end
+  end
+end
+
 module LogStash module Inputs class File < LogStash::Inputs::Base
   config_name "file"
 
@@ -211,6 +233,10 @@ module LogStash module Inputs class File < LogStash::Inputs::Base
     @channel.first
   end
 
+  def identity_count
+    @imcc.codec.identity_count
+  end
+
   def build_channel
     @watch_component = WatcherComponent.new(:head, nil, nil).add_watcher(@tail)
     @watch_component.downstream = @imcc = IdentityMapCodecComponent.new(:link, @watch_component, nil).add_codec(@codec)
@@ -239,9 +265,14 @@ module LogStash module Inputs class File < LogStash::Inputs::Base
   end
 
   def run(queue)
-    @queue = queue
-    begin_tailing
-    @tail.subscribe(self)
+    begin
+      @queue = queue
+      begin_tailing
+      @tail.subscribe(self)
+    rescue => e
+      STDERR.puts "---> run error", e.message, e.backtrace.take(4)
+      raise e
+    end
   end # def run
 
   def stop

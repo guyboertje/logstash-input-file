@@ -10,7 +10,7 @@ module LogStash module Inputs class GlobalDecorateComponent
     put_type(data)
     LogStash::Util::Decorators.add_fields(meta_add_field, data, meta_plugin_name)
     LogStash::Util::Decorators.add_tags(meta_tags, data, meta_plugin_name)
-    deliver(context, data)
+    super
   end
 
   private

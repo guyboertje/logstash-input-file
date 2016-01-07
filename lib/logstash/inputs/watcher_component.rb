@@ -13,9 +13,9 @@ module LogStash module Inputs class WatcherComponent
     @watcher.quit
   end
 
-  def do_work(context, data)
+  def deliver(context, data)
     log_line_received(context[:path], data) if line?(context)
-    deliver(context, data)
+    super
   end
 
   def log_line_received(path, line)
