@@ -270,6 +270,8 @@ module LogStash module Inputs class File < LogStash::Inputs::Base
       begin_tailing
       @tail.subscribe(self)
     rescue => e
+      # for POC only, to debug integration testing
+      # as the pipeline contuously restarts the input
       STDERR.puts "---> run error", e.message, e.backtrace.take(4)
       raise e
     end
