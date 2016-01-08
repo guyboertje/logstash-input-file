@@ -4,9 +4,9 @@ require "spec/spec_helper"
 require "logstash/inputs/local_decorate_component"
 
 describe LogStash::Inputs::LocalDecorateComponent do
-  let(:upstream)   { ComponentTracer.new }
-  let(:downstream) { ComponentTracer.new }
-  let(:loggr)      { FileLogTracer.new }
+  let(:upstream)   { FileInput::ComponentTracer.new }
+  let(:downstream) { FileInput::ComponentTracer.new }
+  let(:loggr)      { FileInput::FileLogTracer.new }
   let(:path)       { "baz" }
   let(:ctx)        { {:action => "event", :path => path} }
   let(:host)       { "foo" }

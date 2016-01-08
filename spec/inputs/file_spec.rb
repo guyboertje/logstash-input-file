@@ -200,7 +200,8 @@ describe LogStash::Inputs::File do
     end
 
     context "when close_older config is specified" do
-      let(:line)         { "line1.1-of-a" }
+      let(:line)     { "line1.1-of-a" }
+      let(:filename) { "#{tmpdir_path}/a.log" }
 
       subject { described_class.new(conf) }
 
@@ -220,12 +221,12 @@ describe LogStash::Inputs::File do
 
       it "having timed_out, the identity is evicted" do
         sleep 0.1
-        File.open("#{tmpdir_path}/a.log", "a") do |fd|
+        File.open(filename, "a") do |fd|
           fd.puts(line)
           fd.fsync
         end
         expect(pause_until{ subject.identity_count == 1 }).to be_truthy
-        expect(codec).to receive_call_and_args(:decode_accept, [true])
+        expect(codec).to receive_call_and_args(:decode_accept, [[{:path=>filename, :action=>"event"}, line]])
         # wait for expiry to kick in and close files.
         expect(pause_until{ subject.identity_count.zero? }).to be_truthy
         expect(codec).to receive_call_and_args(:auto_flush, [true])

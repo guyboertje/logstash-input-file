@@ -8,8 +8,8 @@ class InputTestComponent
 end
 
 describe LogStash::Inputs::Component do
-  let(:upstream)   { ComponentTracer.new }
-  let(:downstream) { ComponentTracer.new }
+  let(:upstream)   { FileInput::ComponentTracer.new }
+  let(:downstream) { FileInput::ComponentTracer.new }
 
   subject { InputTestComponent.new(:link, upstream, downstream) }
 

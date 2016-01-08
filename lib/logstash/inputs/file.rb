@@ -282,8 +282,8 @@ module LogStash module Inputs class File < LogStash::Inputs::Base
     # but it will write their last read positions to since_db
     # beforehand
     if @tail
-      @imcc.stop
       @watch_component.stop
+      @imcc.stop
       # close_channel
     end
   end

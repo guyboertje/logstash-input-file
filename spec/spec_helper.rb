@@ -1,6 +1,7 @@
 # encoding: utf-8
 
 require "logstash/devutils/rspec/spec_helper"
+require "rspec_sequencing"
 
 module FileInput
   class TracerBase
@@ -40,8 +41,8 @@ module FileInput
       self
     end
     def decode_accept(ctx, data)
-      @tracer.push [:decode_accept, true]
-      # @tracer.push [:decode_accept, [ctx, data]]
+      # @tracer.push [:decode_accept, true]
+      @tracer.push [:decode_accept, [ctx, data]]
       ctx[:action] = "event"
       @listener.process(ctx, {"message" => data})
     end
@@ -56,6 +57,18 @@ module FileInput
     end
     def clone
       self.class.new
+    end
+  end
+  class InputMimic
+    def initialize(component)
+      @head = component
+    end
+    def channel_for(context)
+      # some contexts may need a differently configured channel
+      # for now the static one will do
+      # we give the head component out as, to the
+      # outside world, it is the channel
+      @head
     end
   end
 end

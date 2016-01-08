@@ -4,10 +4,10 @@ require "spec/spec_helper"
 require "logstash/inputs/identity_map_codec_component"
 
 describe LogStash::Inputs::IdentityMapCodecComponent do
-  let(:codec)      { CodecTracer.new }
-  let(:upstream)   { ComponentTracer.new }
-  let(:downstream) { ComponentTracer.new }
-  let(:loggr)      { FileLogTracer.new }
+  let(:codec)      { FileInput::CodecTracer.new }
+  let(:upstream)   { FileInput::ComponentTracer.new }
+  let(:downstream) { FileInput::ComponentTracer.new }
+  let(:loggr)      { FileInput::FileLogTracer.new }
   let(:path)       { "path/to/some/file.log" }
   let(:ctx)        { {:path => path} }
   let(:line)       { "line1" }
@@ -27,7 +27,7 @@ describe LogStash::Inputs::IdentityMapCodecComponent do
     it "calls accept on downstream with an event and context" do
       ctx.update(:action => 'line')
       subject.accept(ctx, line)
-      expect(codec).to receive_call_and_args(:decode_accept, [[ctx, line]])
+      expect(codec).to receive_call_and_args(:decode_accept, [[{:path=>path, :action=>"event"}, line]])
       exctx, exevent = downstream.trace_for(:accept).first
       expect(exctx[:action]).to eq("event")
       expect(exevent).to eq(event)

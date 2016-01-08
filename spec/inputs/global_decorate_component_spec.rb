@@ -5,9 +5,9 @@ require "logstash/inputs/global_decorate_component"
 require "logstash/event"
 
 describe LogStash::Inputs::GlobalDecorateComponent do
-  let(:upstream)   { ComponentTracer.new }
-  let(:downstream) { ComponentTracer.new }
-  let(:loggr)      { FileLogTracer.new }
+  let(:upstream)   { FileInput::ComponentTracer.new }
+  let(:downstream) { FileInput::ComponentTracer.new }
+  let(:loggr)      { FileInput::FileLogTracer.new }
   let(:name)       { "bar" }
   let(:ctx)        { {:action => "event"} }
   let(:ttype)      { "foo" }
