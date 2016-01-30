@@ -8,7 +8,7 @@ module LogStash module Inputs class IdentityMapCodecComponent
   attr_reader :codec
 
   def add_codec(codec)
-    @codec = LogStash::Codecs::IdentityMapCodec.new(codec)
+    @codec = LogStash::Codecs::IdentityMapCodec.new(codec.add_listener(self))
     self
   end
 
@@ -29,7 +29,7 @@ module LogStash module Inputs class IdentityMapCodecComponent
 
   def do_line(context, data)
     return false unless line?(context)
-    @codec.decode_accept(context, data, self)
+    @codec.decode_accept(context, data)
     # above should call back on #process
     true
   end

@@ -200,7 +200,8 @@ describe LogStash::Inputs::File do
     end
 
     context "when close_older config is specified" do
-      let(:line)         { "line1.1-of-a" }
+      let(:line)     { "line1.1-of-a" }
+      let(:filename) { "#{tmpdir_path}/a.log" }
 
       subject { described_class.new(conf) }
 
@@ -220,14 +221,14 @@ describe LogStash::Inputs::File do
 
       it "having timed_out, the identity is evicted" do
         sleep 0.1
-        File.open("#{tmpdir_path}/a.log", "a") do |fd|
+        File.open(filename, "a") do |fd|
           fd.puts(line)
           fd.fsync
         end
-        expect(pause_until{ subject.codec.identity_count == 1 }).to be_truthy
-        expect(codec).to receive_call_and_args(:accept, [true])
+        expect(pause_until{ subject.identity_count == 1 }).to be_truthy
+        expect(codec).to receive_call_and_args(:decode_accept, [[{:path=>filename, :action=>"event"}, line]])
         # wait for expiry to kick in and close files.
-        expect(pause_until{ subject.codec.identity_count.zero? }).to be_truthy
+        expect(pause_until{ subject.identity_count.zero? }).to be_truthy
         expect(codec).to receive_call_and_args(:auto_flush, [true])
         subject.stop
       end
@@ -248,7 +249,7 @@ describe LogStash::Inputs::File do
               "type" => "blah",
               "path" => "#{tmpdir_path}/*.log",
               "sincedb_path" => sincedb_path,
-              "stat_interval" => 0.02,
+              "stat_interval" => 0.1,
               "codec" => codec,
               "ignore_older" => 1,
               "delimiter" => FILE_DELIMITER)
@@ -262,7 +263,7 @@ describe LogStash::Inputs::File do
         subject.stop
         expect(codec).to receive_call_and_args(:accept, false)
         expect(codec).to receive_call_and_args(:auto_flush, false)
-        expect(subject.codec.identity_count).to eq(0)
+        expect(subject.identity_count).to eq(0)
       end
     end
 
@@ -303,7 +304,7 @@ describe LogStash::Inputs::File do
 
       it "collects separate multiple line events from each file" do
         # wait for both paths to be mapped as identities
-        expect(pause_until{ subject.codec.identity_count == 2 }).to be_truthy
+        expect(pause_until{ subject.identity_count == 2 }).to be_truthy
         subject.stop
         # stop flushes both events
         expect(pause_until{ events.size == 2 }).to be_truthy
