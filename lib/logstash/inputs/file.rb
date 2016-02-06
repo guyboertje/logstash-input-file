@@ -269,6 +269,10 @@ class LogStash::Inputs::File < LogStash::Inputs::Base
     end
   end
 
+  class FlushableListener < ListenerTail
+    attr_writer :path
+  end
+
   def listener_for(path)
     # path is the identity
     ListenerTail.new(path, self)
@@ -288,6 +292,7 @@ class LogStash::Inputs::File < LogStash::Inputs::Base
     begin_tailing
     @queue = queue
     @tail.subscribe(self)
+    exit_flush
   end # def run
 
   def post_process_this(event)
@@ -308,6 +313,20 @@ class LogStash::Inputs::File < LogStash::Inputs::Base
     if @tail
       @codec.close
       @tail.quit
+    end
+  end
+
+  private
+
+  def exit_flush
+    listener = FlushableListener.new("none", self)
+    if @codec.identity_count.zero?
+      # using the base codec without identity/path info
+      @codec.base_codec.flush do |event|
+        listener.process_event(event) rescue nil
+      end
+    else
+      @codec.flush_mapped(listener)
     end
   end
 end # class LogStash::Inputs::File
