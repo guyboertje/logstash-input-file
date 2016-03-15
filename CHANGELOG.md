@@ -1,3 +1,7 @@
+## 2.2.2
+ - Fixes [#101](https://github.com/logstash-plugins/logstash-input-file/issues/101)
+ - Fixes [#104](https://github.com/logstash-plugins/logstash-input-file/issues/104) Documentation
+
 ## 2.2.1
  - Fix spec failures on CI Linux builds (not seen on local OSX and Linux)
 
